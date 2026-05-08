@@ -103,12 +103,14 @@ visits
   location_id     uuid not null references locations(id)
   rep_name        text not null
   visit_date      date not null
-  outcome         text not null              -- enum-ish, see below
+  outcomes        text[] not null            -- enum-ish array, see below; non-empty
   flier_version   text                       -- enum-ish, see below
   fliers_left     int                        -- nullable
   notes           text                       -- nullable
   created_at      timestamptz not null default now()
   deleted_at      timestamptz                -- soft delete
+
+  check (cardinality(outcomes) > 0)
 
 edit_events
   id              uuid primary key default gen_random_uuid()
@@ -122,7 +124,7 @@ edit_events
 
 **Enum-ish strings — kept as `text`, not Postgres enums, so we can change the set without a migration:**
 
-- `outcome` ∈ { `posted_flier`, `left_stack_with_staff`, `had_conversation`, `turned_away`, `no_answer`, `location_closed` }
+- `outcomes[]` (text array, at least one element) — each element ∈ { `posted_flier`, `left_stack_with_staff`, `had_conversation`, `turned_away`, `no_answer`, `location_closed` }. A single visit can have multiple outcomes (e.g., posted a flier *and* had a conversation).
 - `flier_version` ∈ { `design_1`, `design_2` }
 
 The string set lives in **one file** (`lib/enums.ts`) so changing what's allowed is a single edit.
@@ -208,4 +210,4 @@ Each of these can be added later without rewriting V1. None of them require a de
 
 ---
 
-_Last verified against codebase: 2026-05-08_
+_Last verified against codebase: 2026-05-08 (outcomes column became `text[]` for multi-select)_
