@@ -24,7 +24,7 @@ function bytesToBase64Url(bytes: Uint8Array): string {
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 
-function base64UrlToBytes(s: string): Uint8Array {
+function base64UrlToBytes(s: string): Uint8Array<ArrayBuffer> {
   const pad = s.length % 4 === 0 ? '' : '='.repeat(4 - (s.length % 4))
   const b64 = s.replace(/-/g, '+').replace(/_/g, '/') + pad
   const binary = atob(b64)
