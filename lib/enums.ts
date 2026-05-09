@@ -21,3 +21,15 @@ export type FlierVersion = (typeof FLIER_VERSIONS)[number]['value']
 
 // Suggested city/town options for the address picker. Free-text fallback.
 export const CITY_TOWN_SUGGESTIONS = ['Boston', 'Fall River'] as const
+
+// Display helpers — map a stored value to the label we show users.
+export function outcomeLabel(value: string): string {
+  return OUTCOMES.find(o => o.value === value)?.label ?? value
+}
+
+export function flierVersionLabel(
+  value: string | null | undefined,
+): string | null {
+  if (!value) return null
+  return FLIER_VERSIONS.find(f => f.value === value)?.label ?? value
+}
