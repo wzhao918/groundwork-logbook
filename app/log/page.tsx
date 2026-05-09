@@ -1,4 +1,5 @@
 import { VisitForm } from '@/components/VisitForm'
+import { PageHeader } from '@/components/PageHeader'
 
 export default async function LogPage({
   searchParams,
@@ -8,15 +9,7 @@ export default async function LogPage({
   const { logged } = await searchParams
   return (
     <main className="mx-auto max-w-md px-6 py-8 pb-24">
-      <header className="mb-6 flex items-baseline justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Log a Visit</h1>
-        <a
-          href="/dashboard"
-          className="text-sm text-stone-600 underline underline-offset-2"
-        >
-          Dashboard →
-        </a>
-      </header>
+      <PageHeader title="Log a Visit" current="log" />
 
       {logged === '1' && (
         <div className="mb-6 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-900">

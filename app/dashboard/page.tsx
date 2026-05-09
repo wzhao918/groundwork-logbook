@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { supabaseServer } from '@/lib/supabase'
-import { outcomeLabel, flierVersionLabel } from '@/lib/enums'
+import { outcomeLabel } from '@/lib/enums'
+import { PageHeader } from '@/components/PageHeader'
+import { VisitCard } from '@/components/VisitCard'
 
 type RawVisit = {
   id: string
@@ -21,15 +23,6 @@ type RawLocation = {
 }
 
 type Visit = RawVisit & { location: RawLocation }
-
-function formatDate(iso: string): string {
-  // Append T00:00:00 so the date string is parsed in local time, not UTC.
-  return new Date(iso + 'T00:00:00').toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
-}
 
 export default async function DashboardPage({
   searchParams,
@@ -112,15 +105,7 @@ export default async function DashboardPage({
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-8 pb-24">
-      <header className="mb-6 flex items-baseline justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-        <Link
-          href="/log"
-          className="text-sm text-stone-600 underline underline-offset-2"
-        >
-          Log a Visit →
-        </Link>
-      </header>
+      <PageHeader title="Dashboard" current="dashboard" />
 
       <form
         method="get"
@@ -245,7 +230,7 @@ export default async function DashboardPage({
           <ul className="space-y-3">
             {filtered.map(v => (
               <li key={v.id}>
-                <VisitCard visit={v} />
+                <VisitCard visit={v} location={v.location} />
               </li>
             ))}
           </ul>
@@ -284,54 +269,5 @@ function SummaryCard({
       <h2 className="text-sm font-medium text-stone-600">{title}</h2>
       {children}
     </div>
-  )
-}
-
-function VisitCard({ visit }: { visit: Visit }) {
-  const flier = flierVersionLabel(visit.flier_version)
-  const fliersLeftStr =
-    visit.fliers_left !== null
-      ? `${visit.fliers_left} flier${visit.fliers_left === 1 ? '' : 's'} left`
-      : null
-  const meta = [flier, fliersLeftStr].filter(Boolean).join(' · ')
-
-  return (
-    <article className="rounded-xl bg-white p-4 ring-1 ring-stone-200">
-      <div className="flex items-baseline justify-between gap-3">
-        <div>
-          <div className="text-sm font-medium text-stone-900">
-            {visit.location.street_address}
-          </div>
-          <div className="text-xs text-stone-600">
-            {visit.location.city_town}
-          </div>
-        </div>
-        <div className="text-right">
-          <div className="text-xs text-stone-500">
-            {formatDate(visit.visit_date)}
-          </div>
-          <div className="text-xs text-stone-700">{visit.rep_name}</div>
-        </div>
-      </div>
-
-      {visit.outcomes.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {visit.outcomes.map(o => (
-            <span
-              key={o}
-              className="rounded-md bg-stone-100 px-2 py-1 text-xs text-stone-700"
-            >
-              {outcomeLabel(o)}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {meta && <div className="mt-2 text-xs text-stone-600">{meta}</div>}
-
-      {visit.notes && (
-        <p className="mt-2 text-sm text-stone-700">{visit.notes}</p>
-      )}
-    </article>
   )
 }
