@@ -17,12 +17,18 @@ export type LocationSelection =
 
 type Props = {
   onChange: (sel: LocationSelection) => void
+  // When provided (e.g., on a visit edit page), the picker starts in the
+  // "selected" state with this location pre-chosen. The user can click Change
+  // to swap to a different existing location or add a new one.
+  initialLocation?: Location
 }
 
-export function LocationPicker({ onChange }: Props) {
+export function LocationPicker({ onChange, initialLocation }: Props) {
   const [locations, setLocations] = useState<Location[]>([])
   const [query, setQuery] = useState('')
-  const [selected, setSelected] = useState<Location | null>(null)
+  const [selected, setSelected] = useState<Location | null>(
+    initialLocation ?? null,
+  )
   const [isAddingNew, setIsAddingNew] = useState(false)
   const [newStreet, setNewStreet] = useState('')
   const [newCity, setNewCity] = useState('')

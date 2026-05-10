@@ -4,14 +4,40 @@ import { useState, useActionState } from 'react'
 import { LocationPicker, type LocationSelection } from './LocationPicker'
 import { OUTCOMES, FLIER_VERSIONS } from '@/lib/enums'
 import { submitVisit, type SubmitState } from '@/app/log/actions'
+import { updateVisit } from '@/app/visits/actions'
 
 const initialState: SubmitState = {}
 
-export function VisitForm() {
-  const [state, formAction, pending] = useActionState(submitVisit, initialState)
-  const [location, setLocation] = useState<LocationSelection>(null)
+export type VisitEditing = {
+  visitId: string
+  initialValues: {
+    rep_name: string
+    visit_date: string
+    outcomes: string[]
+    flier_version: string | null
+    fliers_left: number | null
+    notes: string | null
+  }
+  initialLocation: { id: string; street_address: string; city_town: string }
+  returnUrl: string
+}
+
+export function VisitForm({ editing }: { editing?: VisitEditing }) {
+  // useActionState binds an action with shape (prevState, formData) => state.
+  // For edit mode we pre-bind visitId + returnUrl, leaving the right signature.
+  const action = editing
+    ? updateVisit.bind(null, editing.visitId, editing.returnUrl)
+    : submitVisit
+  const [state, formAction, pending] = useActionState(action, initialState)
+
+  const [location, setLocation] = useState<LocationSelection>(
+    editing
+      ? { type: 'existing', location: editing.initialLocation }
+      : null,
+  )
 
   const today = new Date().toISOString().slice(0, 10)
+  const initial = editing?.initialValues
 
   return (
     <form action={formAction} className="space-y-7">
@@ -21,6 +47,7 @@ export function VisitForm() {
           name="rep_name"
           autoComplete="given-name"
           required
+          defaultValue={initial?.rep_name ?? ''}
           className="w-full rounded-lg border border-stone-300 px-4 py-3 text-base focus:border-stone-500 focus:outline-none"
         />
       </Field>
@@ -29,14 +56,17 @@ export function VisitForm() {
         <input
           type="date"
           name="visit_date"
-          defaultValue={today}
+          defaultValue={initial?.visit_date ?? today}
           required
           className="w-full rounded-lg border border-stone-300 px-4 py-3 text-base focus:border-stone-500 focus:outline-none"
         />
       </Field>
 
       <Field label="Where?">
-        <LocationPicker onChange={setLocation} />
+        <LocationPicker
+          onChange={setLocation}
+          initialLocation={editing?.initialLocation}
+        />
         {location?.type === 'existing' && (
           <input
             type="hidden"
@@ -69,6 +99,7 @@ export function VisitForm() {
               name="outcomes"
               value={o.value}
               label={o.label}
+              defaultChecked={initial?.outcomes.includes(o.value) ?? false}
             />
           ))}
         </div>
@@ -83,6 +114,7 @@ export function VisitForm() {
               name="flier_version"
               value={f.value}
               label={f.label}
+              defaultChecked={initial?.flier_version === f.value}
             />
           ))}
         </div>
@@ -94,6 +126,7 @@ export function VisitForm() {
           name="fliers_left"
           min={0}
           inputMode="numeric"
+          defaultValue={initial?.fliers_left ?? ''}
           className="w-full rounded-lg border border-stone-300 px-4 py-3 text-base focus:border-stone-500 focus:outline-none"
         />
       </Field>
@@ -102,6 +135,7 @@ export function VisitForm() {
         <textarea
           name="notes"
           rows={3}
+          defaultValue={initial?.notes ?? ''}
           className="w-full rounded-lg border border-stone-300 px-4 py-3 text-base focus:border-stone-500 focus:outline-none"
         />
       </Field>
@@ -117,7 +151,7 @@ export function VisitForm() {
         disabled={pending || !location}
         className="w-full rounded-xl bg-stone-900 px-4 py-4 text-base font-medium text-white transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {pending ? 'Saving…' : 'Log it'}
+        {pending ? 'Saving…' : editing ? 'Update' : 'Log it'}
       </button>
     </form>
   )
@@ -144,12 +178,14 @@ function OptionCard({
   value,
   label,
   required,
+  defaultChecked,
 }: {
   type: 'radio' | 'checkbox'
   name: string
   value: string
   label: string
   required?: boolean
+  defaultChecked?: boolean
 }) {
   return (
     <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-stone-300 bg-white px-4 py-3 text-base transition has-[:checked]:border-stone-900 has-[:checked]:bg-stone-900 has-[:checked]:text-white">
@@ -158,6 +194,7 @@ function OptionCard({
         name={name}
         value={value}
         required={required}
+        defaultChecked={defaultChecked}
         className="sr-only"
       />
       <span>{label}</span>

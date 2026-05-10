@@ -26,6 +26,8 @@ The whole system is built on four nouns. If you understand these, you understand
 
 **Edit Event** — an audit-log row capturing every modification to a Visit or a Location: who did it, when, and what changed. Append-only. Not shown on the dashboard by default, but available if we ever need to reconstruct what happened.
 
+> **V1 actor convention:** for visit creation, `actor_name` is the typed rep name (it's the only identity signal we have). For edits and deletes, V1 records `actor_name` as `(passcode user)` because we don't yet capture per-user identity. V2's per-user auth replaces this with the logged-in user's email.
+
 **Soft delete:** A Visit or Location can be marked deleted but the row stays. A wrongly-deleted entry is recoverable.
 
 ---
@@ -47,7 +49,7 @@ A single visit, end-to-end, in the order it actually happens:
 
 ## 3. Surfaces (the pages)
 
-Five routes in V1:
+Seven routes in V1:
 
 | Route | What it does |
 |-------|--------------|
@@ -55,9 +57,11 @@ Five routes in V1:
 | `/log` | The "Log a Visit" form. Mobile-first. The everyday surface. |
 | `/dashboard` | Reverse-chronological visit log + outcome counts + city/town counts + filters (rep, city/town, date range). |
 | `/locations` | Index of every location: address, city/town, total visits, last visit date, last outcome. |
-| `/locations/[id]` | Per-location page: full revisit history with notes, edit-location panel. |
+| `/locations/[id]` | Per-location page: full revisit history with notes. |
+| `/visits/[id]/edit` | Edit a visit. Same form as `/log`, pre-filled. Soft-delete sits at the bottom behind a confirm dialog. Reached via the "Edit" link on any `VisitCard`; a `?return=` param sends the user back to where they came from. |
+| `/locations/[id]/edit` | Edit a location's street + city/town. Soft-delete at the bottom, **hidden** if the location has any non-deleted visits. |
 
-Editing happens **inline** on the relevant surface (a pencil icon on a visit row; an edit panel on a location page). Deleting is a confirm-modal — soft-delete only.
+Editing happens on **dedicated pages** (originally specced as inline; revised after building the form to keep the LocationPicker reuse clean and avoid per-row state on the dashboard). Each edit page reuses the create-form shape, just pre-filled. Deleting is a native `<dialog>` confirm — soft-delete only, never a hard delete.
 
 **Vibe:** large tap targets, generous spacing, accessible/playful copy ("How'd it go?" instead of "Outcome:"). No streaks, badges, or counters — it's a tool, not a game.
 
@@ -210,4 +214,4 @@ Each of these can be added later without rewriting V1. None of them require a de
 
 ---
 
-_Last verified against codebase: 2026-05-08 (outcomes column became `text[]` for multi-select)_
+_Last verified against codebase: 2026-05-10 (added edit + soft-delete on dedicated pages; V1 audit-actor convention documented)_

@@ -32,6 +32,8 @@ export default async function DashboardPage({
     city?: string
     from?: string
     to?: string
+    updated?: string
+    deleted?: string
   }>
 }) {
   const params = await searchParams
@@ -106,6 +108,17 @@ export default async function DashboardPage({
   return (
     <main className="mx-auto max-w-2xl px-6 py-8 pb-24">
       <PageHeader title="Dashboard" current="dashboard" />
+
+      {params.updated === '1' && (
+        <div className="mb-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+          Visit updated.
+        </div>
+      )}
+      {params.deleted === '1' && (
+        <div className="mb-4 rounded-xl bg-stone-100 px-4 py-3 text-sm text-stone-800">
+          Visit deleted. (Hidden — the audit log keeps a record.)
+        </div>
+      )}
 
       <form
         method="get"
@@ -230,7 +243,11 @@ export default async function DashboardPage({
           <ul className="space-y-3">
             {filtered.map(v => (
               <li key={v.id}>
-                <VisitCard visit={v} location={v.location} />
+                <VisitCard
+                  visit={v}
+                  location={v.location}
+                  editReturnUrl="/dashboard"
+                />
               </li>
             ))}
           </ul>

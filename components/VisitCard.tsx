@@ -21,12 +21,15 @@ type LocationFields = {
 // When `location` is provided (e.g., on the dashboard), the card shows the
 // address as a link to that location's page. When omitted (e.g., on the
 // per-location page itself), the card leads with date + rep instead.
+// `editReturnUrl` is where the Edit link sends the user back to after save.
 export function VisitCard({
   visit,
   location,
+  editReturnUrl,
 }: {
   visit: VisitFields
   location?: LocationFields
+  editReturnUrl: string
 }) {
   const flier = flierVersionLabel(visit.flier_version)
   const fliersLeftStr =
@@ -85,6 +88,15 @@ export function VisitCard({
       {visit.notes && (
         <p className="mt-2 text-sm text-stone-700">{visit.notes}</p>
       )}
+
+      <div className="mt-3 flex justify-end">
+        <Link
+          href={`/visits/${visit.id}/edit?return=${encodeURIComponent(editReturnUrl)}`}
+          className="text-xs text-stone-500 underline underline-offset-2 hover:text-stone-700"
+        >
+          Edit
+        </Link>
+      </div>
     </article>
   )
 }

@@ -3,50 +3,9 @@
 import { redirect } from 'next/navigation'
 import { supabaseServer } from '@/lib/supabase'
 import { writeEditEvent } from '@/lib/audit'
+import { findOrCreateLocation } from '@/lib/locations'
 
 export type SubmitState = { error?: string }
-
-// Escape PostgREST ilike wildcards so user input matches literally.
-const escapeIlike = (s: string) => s.replace(/[%_\\]/g, '\\$&')
-
-async function findOrCreateLocation(
-  street: string,
-  city: string,
-  rep_name: string,
-): Promise<{ id: string; created: boolean }> {
-  const sb = supabaseServer()
-
-  const existing = await sb
-    .from('locations')
-    .select('id')
-    .ilike('street_address', escapeIlike(street))
-    .ilike('city_town', escapeIlike(city))
-    .is('deleted_at', null)
-    .maybeSingle()
-
-  if (existing.data) return { id: existing.data.id, created: false }
-
-  const ins = await sb
-    .from('locations')
-    .insert({ street_address: street, city_town: city, created_by: rep_name })
-    .select('id')
-    .single()
-
-  if (ins.error || !ins.data) {
-    // Race fallback — another submission may have just inserted the same address.
-    const retry = await sb
-      .from('locations')
-      .select('id')
-      .ilike('street_address', escapeIlike(street))
-      .ilike('city_town', escapeIlike(city))
-      .is('deleted_at', null)
-      .maybeSingle()
-    if (retry.data) return { id: retry.data.id, created: false }
-    throw new Error(ins.error?.message ?? 'Could not save location.')
-  }
-
-  return { id: ins.data.id, created: true }
-}
 
 export async function submitVisit(
   _prev: SubmitState,
