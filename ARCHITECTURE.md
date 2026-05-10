@@ -22,11 +22,9 @@ The whole system is built on four nouns. If you understand these, you understand
 
 **Location** — a physical place identified by its **street address + city/town**. A second visit to an existing address attaches to the same Location. This is what makes "revisit" a meaningful, distinct event in the system.
 
-**Rep** — the person logging the visit. In V1, a free-text name (typed once or tapped from a chip on the device they're using). In V2, derived from a logged-in user account (see §8).
+**Rep** — the person logging the visit. Identified by their Supabase Auth account. The visit's `rep_name` is auto-populated from the user's display name (set during onboarding) and stays put when other people edit the visit later — the visit's owner doesn't change just because someone else corrected a typo.
 
-**Edit Event** — an audit-log row capturing every modification to a Visit or a Location: who did it, when, and what changed. Append-only. Not shown on the dashboard by default, but available if we ever need to reconstruct what happened.
-
-> **V1 actor convention:** for visit creation, `actor_name` is the typed rep name (it's the only identity signal we have). For edits and deletes, V1 records `actor_name` as `(passcode user)` because we don't yet capture per-user identity. V2's per-user auth replaces this with the logged-in user's email.
+**Edit Event** — an audit-log row capturing every modification to a Visit or a Location: who did it, when, and what changed. Append-only. Not shown on the dashboard by default, but available if we ever need to reconstruct what happened. `actor_name` is the editor's display name pulled from the session.
 
 **Soft delete:** A Visit or Location can be marked deleted but the row stays. A wrongly-deleted entry is recoverable.
 
@@ -49,11 +47,13 @@ A single visit, end-to-end, in the order it actually happens:
 
 ## 3. Surfaces (the pages)
 
-Seven routes in V1:
+Nine routes in V1:
 
 | Route | What it does |
 |-------|--------------|
-| `/login` | Passcode gate. Sets a signed session cookie. |
+| `/login` | Email + password (with "email me a link" magic-link fallback). Supabase Auth. |
+| `/auth/callback` | Magic-link / invite landing point. Exchanges the auth code for a session cookie, redirects to `/log`. |
+| `/onboarding` | First-login: set display name + (optional) password. Middleware routes any authenticated user without a `display_name` here. |
 | `/log` | The "Log a Visit" form. Mobile-first. The everyday surface. |
 | `/dashboard` | Reverse-chronological visit log + outcome counts + city/town counts + filters (rep, city/town, date range). |
 | `/locations` | Index of every location: address, city/town, total visits, last visit date, last outcome. |
@@ -69,17 +69,16 @@ Editing happens on **dedicated pages** (originally specced as inline; revised af
 
 ## 4. Access model
 
-### V1: shared passcode
-- One environment variable on the server (`APP_PASSCODE`).
-- `/login` accepts the passcode and sets a signed, httpOnly session cookie (30-day expiry).
-- All other routes are gated by middleware checking that cookie.
-- Anyone with the passcode can log a visit, edit any visit/location, or soft-delete any visit/location. Audit log captures the typed rep name as `actor_name`.
+### V1: per-user identity (Supabase Auth, admin-provisioned)
+- **Email + password** primary; **magic-link** as a fallback at `/login`. Both work on the same account.
+- **No public signup.** `Allow new users to sign up` is OFF in Supabase. The only way in is via an admin invite (Authentication → Users → Invite user in the Supabase dashboard).
+- New invitees land on `/auth/callback` from the email link, get a session cookie, and are routed to `/onboarding` to set a display name + (optional) password.
+- Middleware validates the JWT on every request via `supabase.auth.getUser()` and gates everything except `/login` and `/auth/*`. Authenticated users without a `display_name` are routed to `/onboarding`.
+- `actor_name` on every audit row is the editor's display name from their session.
+- Writes still go through the service-role admin client (`supabaseAdmin`) inside server actions — RLS isn't currently used to gate writes; the session check at the action boundary is what protects them.
 
-### V2 (deferred): per-rep auth via Supabase Auth
-- Reps log in with magic-link email (Supabase Auth, free tier).
-- Rep field on the Visit form is auto-populated from `auth.users.email`.
-- Edit Events get a real `actor_user_id` instead of a typed string.
-- Cutover plan in §8.
+### Future: tighter RLS / SSO / role-based permissions
+If we ever need per-user data isolation (e.g., reps only see their own visits), it's a policy change, not an architecture change — `auth.uid()` is available inside RLS policies on every table.
 
 ---
 
@@ -170,8 +169,8 @@ CLAUDE.md
 - **DB:** Supabase Postgres (separate project from Groundwork). Free tier.
 - **Hosting:** Vercel (separate project from Groundwork). Free tier.
 - **Styling:** Tailwind. Mobile-first. Large tap targets. Accessible copy.
-- **Auth (V1):** None — shared passcode via signed cookie.
-- **Secrets (Vercel env vars):** `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `APP_PASSCODE`, `SESSION_SECRET`.
+- **Auth (V1):** Supabase Auth (email + password and magic-link). Admin-provisioned via the Supabase dashboard. Session cookies handled by `@supabase/ssr`.
+- **Secrets (Vercel env vars):** `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`. (The legacy `APP_PASSCODE` and `SESSION_SECRET` are no longer used and can be deleted from Vercel.)
 
 **Read path:** browser → Supabase JS client (anon key, RLS-protected) → Postgres. Direct.
 **Write path:** browser → Next.js route handler → service-role Supabase client → Postgres. Passcode cookie verified at the route handler.
@@ -180,7 +179,6 @@ CLAUDE.md
 
 ## 7. What V1 doesn't do (and why that's okay)
 
-- **No real auth.** Shared passcode is enough for a 2–3 person trusted team.
 - **No address picker, no geocoding, no map.** Free-text address with typeahead-against-prior-entries is enough.
 - **No photos.** Deferred to V2.
 - **No offline mode.** Reps log between visits or at home; signal is fine.
@@ -194,7 +192,7 @@ CLAUDE.md
 
 Each of these can be added later without rewriting V1. None of them require a destructive migration.
 
-**Per-user auth.** Add Supabase Auth (magic-link email). Add a `users` table or use `auth.users` directly. Add a nullable `rep_user_id uuid` column on `visits`. Backfill from a name-to-user mapping. Switch the form to read from the session. After a quiet period, drop `rep_name`. Standard parallel-build cutover; rollback = re-add the column.
+**~~Per-user auth.~~** ✅ Done — see §4. We took the lighter path of keeping `rep_name` (denormalized from session) instead of adding `rep_user_id`, since for V1 query needs the display name is enough.
 
 **Address picker + map view.** Add nullable `latitude`, `longitude` columns on `locations`. New locations created via the picker get coords for free. One-time backfill via Mapbox/Google geocoding for existing free-text addresses. New `/map` route reads coords. Old free-text addresses keep working.
 
@@ -214,4 +212,4 @@ Each of these can be added later without rewriting V1. None of them require a de
 
 ---
 
-_Last verified against codebase: 2026-05-10 (added edit + soft-delete on dedicated pages; V1 audit-actor convention documented)_
+_Last verified against codebase: 2026-05-10 (identity auth shipped: Supabase Auth replaces shared passcode, onboarding flow, audit actor + rep_name from session)_

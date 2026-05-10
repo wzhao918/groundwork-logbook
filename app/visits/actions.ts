@@ -1,8 +1,9 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import { supabaseServer } from '@/lib/supabase'
-import { writeEditEvent, SHARED_PASSCODE_ACTOR } from '@/lib/audit'
+import { supabaseAdmin } from '@/lib/supabase/admin'
+import { getCurrentDisplayName } from '@/lib/auth'
+import { writeEditEvent } from '@/lib/audit'
 import { findOrCreateLocation } from '@/lib/locations'
 import { computeDiff } from '@/lib/diff'
 
@@ -14,7 +15,9 @@ export async function updateVisit(
   _prev: SubmitState,
   formData: FormData,
 ): Promise<SubmitState> {
-  const rep_name = String(formData.get('rep_name') ?? '').trim()
+  // The visit's rep_name is preserved across edits — we don't overwrite who
+  // *did* the visit. The current editor is captured separately in the audit log.
+  const editor = await getCurrentDisplayName()
   const visit_date = String(formData.get('visit_date') ?? '')
   const outcomes = formData
     .getAll('outcomes')
@@ -26,7 +29,6 @@ export async function updateVisit(
   const fliers_left = fliers_left_raw === '' ? null : Number(fliers_left_raw)
   const notes = String(formData.get('notes') ?? '').trim() || null
 
-  if (!rep_name) return { error: 'Rep name is required.' }
   if (!visit_date) return { error: 'Pick a date.' }
   if (outcomes.length === 0) {
     return { error: 'Pick at least one thing that happened.' }
@@ -44,7 +46,7 @@ export async function updateVisit(
       return { error: 'Pick a place or add a new one.' }
     }
     try {
-      const result = await findOrCreateLocation(new_street, new_city, rep_name)
+      const result = await findOrCreateLocation(new_street, new_city, editor)
       location_id = result.id
     } catch (e) {
       return {
@@ -53,7 +55,7 @@ export async function updateVisit(
     }
   }
 
-  const sb = supabaseServer()
+  const sb = supabaseAdmin()
 
   // Fetch the existing row so we can compute a meaningful audit diff.
   const existing = await sb
@@ -69,9 +71,10 @@ export async function updateVisit(
     return { error: 'Visit not found, or it was deleted.' }
   }
 
+  // rep_name is intentionally NOT in newValues — the visit's owner doesn't
+  // change just because someone else edited it.
   const newValues = {
     location_id,
-    rep_name,
     visit_date,
     outcomes,
     flier_version,
@@ -82,15 +85,16 @@ export async function updateVisit(
   const upd = await sb.from('visits').update(newValues).eq('id', visitId)
   if (upd.error) return { error: upd.error.message }
 
-  const diff = computeDiff(
-    existing.data as Record<string, unknown>,
-    newValues as Record<string, unknown>,
-  )
+  // Compare only the fields the editor can change. rep_name is excluded
+  // from the diff because we never overwrite it.
+  const before = { ...(existing.data as Record<string, unknown>) }
+  delete before.rep_name
+  const diff = computeDiff(before, newValues as Record<string, unknown>)
   if (diff) {
     await writeEditEvent({
       entity_type: 'visit',
       entity_id: visitId,
-      actor_name: SHARED_PASSCODE_ACTOR,
+      actor_name: editor,
       action: 'update',
       diff,
     })
@@ -104,7 +108,8 @@ export async function softDeleteVisit(
   returnUrl: string,
   _formData: FormData,
 ) {
-  const sb = supabaseServer()
+  const editor = await getCurrentDisplayName()
+  const sb = supabaseAdmin()
   const { error } = await sb
     .from('visits')
     .update({ deleted_at: new Date().toISOString() })
@@ -115,7 +120,7 @@ export async function softDeleteVisit(
     await writeEditEvent({
       entity_type: 'visit',
       entity_id: visitId,
-      actor_name: SHARED_PASSCODE_ACTOR,
+      actor_name: editor,
       action: 'soft_delete',
     })
   }

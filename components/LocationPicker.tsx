@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabaseBrowser } from '@/lib/supabase'
+import { supabaseClient } from '@/lib/supabase/client'
 import { CITY_TOWN_SUGGESTIONS } from '@/lib/enums'
 
 type Location = {
@@ -36,7 +36,7 @@ export function LocationPicker({ onChange, initialLocation }: Props) {
   // Fetch all locations once. With V1's expected volume (tens of rows),
   // client-side filtering avoids a per-keystroke roundtrip.
   useEffect(() => {
-    supabaseBrowser()
+    supabaseClient()
       .from('locations')
       .select('id, street_address, city_town')
       .is('deleted_at', null)

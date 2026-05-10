@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { supabaseServer } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase/admin'
+import { getCurrentDisplayName } from '@/lib/auth'
 import { VisitForm } from '@/components/VisitForm'
 import { ConfirmDeleteButton } from '@/components/ConfirmDeleteButton'
 import { softDeleteVisit } from '@/app/visits/actions'
@@ -26,7 +27,8 @@ export default async function EditVisitPage({
   const { return: rawReturn } = await searchParams
   const returnUrl = safeReturnUrl(rawReturn)
 
-  const sb = supabaseServer()
+  const sb = supabaseAdmin()
+  const repName = await getCurrentDisplayName()
   const visitRes = await sb
     .from('visits')
     .select(
@@ -66,6 +68,7 @@ export default async function EditVisitPage({
       </div>
 
       <VisitForm
+        repName={repName}
         editing={{
           visitId: visit.id,
           initialValues: {

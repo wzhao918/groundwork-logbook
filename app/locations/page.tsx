@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { supabaseServer } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import { outcomeLabel } from '@/lib/enums'
 import { formatDate } from '@/lib/format'
 import { PageHeader } from '@/components/PageHeader'
@@ -29,7 +29,7 @@ export default async function LocationsPage({
   searchParams: Promise<{ deleted?: string }>
 }) {
   const { deleted } = await searchParams
-  const sb = supabaseServer()
+  const sb = supabaseAdmin()
 
   const [locsRes, visitsRes] = await Promise.all([
     sb

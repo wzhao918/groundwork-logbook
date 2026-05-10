@@ -1,4 +1,4 @@
-import { supabaseServer } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 
 // Escape PostgREST ilike wildcards so user input matches literally.
 const escapeIlike = (s: string) => s.replace(/[%_\\]/g, '\\$&')
@@ -10,7 +10,7 @@ export async function findOrCreateLocation(
   city: string,
   rep_name: string,
 ): Promise<{ id: string; created: boolean }> {
-  const sb = supabaseServer()
+  const sb = supabaseAdmin()
 
   const existing = await sb
     .from('locations')

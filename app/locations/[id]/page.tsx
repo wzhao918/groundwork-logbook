@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { supabaseServer } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import { VisitCard } from '@/components/VisitCard'
 
 export default async function LocationDetailPage({
@@ -12,7 +12,7 @@ export default async function LocationDetailPage({
 }) {
   const { id } = await params
   const { updated, deleted } = await searchParams
-  const sb = supabaseServer()
+  const sb = supabaseAdmin()
 
   const [locRes, visitsRes] = await Promise.all([
     sb

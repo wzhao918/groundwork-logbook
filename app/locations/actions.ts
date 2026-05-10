@@ -1,8 +1,9 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import { supabaseServer } from '@/lib/supabase'
-import { writeEditEvent, SHARED_PASSCODE_ACTOR } from '@/lib/audit'
+import { supabaseAdmin } from '@/lib/supabase/admin'
+import { getCurrentDisplayName } from '@/lib/auth'
+import { writeEditEvent } from '@/lib/audit'
 import { computeDiff } from '@/lib/diff'
 
 export type LocationFormState = { error?: string }
@@ -18,7 +19,8 @@ export async function updateLocation(
   if (!street_address) return { error: 'Street address is required.' }
   if (!city_town) return { error: 'City / town is required.' }
 
-  const sb = supabaseServer()
+  const editor = await getCurrentDisplayName()
+  const sb = supabaseAdmin()
   const existing = await sb
     .from('locations')
     .select('street_address, city_town')
@@ -53,7 +55,7 @@ export async function updateLocation(
     await writeEditEvent({
       entity_type: 'location',
       entity_id: locationId,
-      actor_name: SHARED_PASSCODE_ACTOR,
+      actor_name: editor,
       action: 'update',
       diff,
     })
@@ -66,7 +68,8 @@ export async function softDeleteLocation(
   locationId: string,
   _formData: FormData,
 ) {
-  const sb = supabaseServer()
+  const editor = await getCurrentDisplayName()
+  const sb = supabaseAdmin()
 
   // Belt-and-suspenders: even though the page hides the delete button when
   // visits exist, re-check here in case anything raced.
@@ -90,7 +93,7 @@ export async function softDeleteLocation(
     await writeEditEvent({
       entity_type: 'location',
       entity_id: locationId,
-      actor_name: SHARED_PASSCODE_ACTOR,
+      actor_name: editor,
       action: 'soft_delete',
     })
   }

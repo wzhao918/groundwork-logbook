@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { SignOutButton } from './SignOutButton'
 
 type NavKey = 'log' | 'dashboard' | 'locations'
 
@@ -19,7 +20,7 @@ export function PageHeader({
   return (
     <header className="mb-6 flex items-baseline justify-between gap-4">
       <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-      <nav className="flex gap-3 text-sm">
+      <nav className="flex items-baseline gap-3 text-sm">
         {others.map(i => (
           <Link
             key={i.key}
@@ -29,6 +30,8 @@ export function PageHeader({
             {i.label}
           </Link>
         ))}
+        <span className="text-stone-300">·</span>
+        <SignOutButton />
       </nav>
     </header>
   )

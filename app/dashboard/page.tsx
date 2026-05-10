@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { supabaseServer } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import { outcomeLabel } from '@/lib/enums'
 import { PageHeader } from '@/components/PageHeader'
 import { VisitCard } from '@/components/VisitCard'
@@ -37,7 +37,7 @@ export default async function DashboardPage({
   }>
 }) {
   const params = await searchParams
-  const sb = supabaseServer()
+  const sb = supabaseAdmin()
 
   const [visitsRes, locationsRes] = await Promise.all([
     sb

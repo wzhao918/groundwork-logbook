@@ -22,7 +22,13 @@ export type VisitEditing = {
   returnUrl: string
 }
 
-export function VisitForm({ editing }: { editing?: VisitEditing }) {
+export function VisitForm({
+  repName,
+  editing,
+}: {
+  repName: string
+  editing?: VisitEditing
+}) {
   // useActionState binds an action with shape (prevState, formData) => state.
   // For edit mode we pre-bind visitId + returnUrl, leaving the right signature.
   const action = editing
@@ -41,16 +47,19 @@ export function VisitForm({ editing }: { editing?: VisitEditing }) {
 
   return (
     <form action={formAction} className="space-y-7">
-      <Field label="Who's logging?">
-        <input
-          type="text"
-          name="rep_name"
-          autoComplete="given-name"
-          required
-          defaultValue={initial?.rep_name ?? ''}
-          className="w-full rounded-lg border border-stone-300 px-4 py-3 text-base focus:border-stone-500 focus:outline-none"
-        />
-      </Field>
+      <p className="text-sm text-stone-600">
+        Logging as{' '}
+        <span className="font-medium text-stone-900">
+          {editing ? initial?.rep_name : repName}
+        </span>
+        {editing && (
+          <span className="text-stone-500">
+            {' '}
+            · editing as{' '}
+            <span className="font-medium text-stone-700">{repName}</span>
+          </span>
+        )}
+      </p>
 
       <Field label="When?">
         <input

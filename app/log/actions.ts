@@ -1,7 +1,8 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import { supabaseServer } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase/admin'
+import { getCurrentDisplayName } from '@/lib/auth'
 import { writeEditEvent } from '@/lib/audit'
 import { findOrCreateLocation } from '@/lib/locations'
 
@@ -11,7 +12,9 @@ export async function submitVisit(
   _prev: SubmitState,
   formData: FormData,
 ): Promise<SubmitState> {
-  const rep_name = String(formData.get('rep_name') ?? '').trim()
+  // rep_name comes from the authenticated session, never from form input.
+  const rep_name = await getCurrentDisplayName()
+
   const visit_date = String(formData.get('visit_date') ?? '')
   const outcomes = formData
     .getAll('outcomes')
@@ -23,7 +26,6 @@ export async function submitVisit(
   const fliers_left = fliers_left_raw === '' ? null : Number(fliers_left_raw)
   const notes = String(formData.get('notes') ?? '').trim() || null
 
-  if (!rep_name) return { error: "Who's logging? Please enter a name." }
   if (!visit_date) return { error: 'Pick a date.' }
   if (outcomes.length === 0) {
     return { error: 'Pick at least one thing that happened.' }
@@ -56,7 +58,7 @@ export async function submitVisit(
     }
   }
 
-  const sb = supabaseServer()
+  const sb = supabaseAdmin()
   const visitRes = await sb
     .from('visits')
     .insert({

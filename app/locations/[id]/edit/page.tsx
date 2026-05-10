@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { supabaseServer } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import { CITY_TOWN_SUGGESTIONS } from '@/lib/enums'
 import { ConfirmDeleteButton } from '@/components/ConfirmDeleteButton'
 import { softDeleteLocation } from '@/app/locations/actions'
@@ -16,7 +16,7 @@ export default async function EditLocationPage({
   const { id } = await params
   const { error: errorParam } = await searchParams
 
-  const sb = supabaseServer()
+  const sb = supabaseAdmin()
   const [locRes, visitCount] = await Promise.all([
     sb
       .from('locations')
