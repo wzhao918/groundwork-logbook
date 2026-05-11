@@ -75,7 +75,7 @@ export function LocationEditForm({
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-xl bg-stone-900 px-4 py-4 text-base font-medium text-white transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+        className="w-full rounded-xl bg-emerald-700 px-4 py-4 text-base font-medium text-white shadow-sm transition hover:bg-emerald-800 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
       >
         {pending ? 'Saving…' : 'Update'}
       </button>

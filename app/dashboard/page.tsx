@@ -32,8 +32,6 @@ export default async function DashboardPage({
     city?: string
     from?: string
     to?: string
-    updated?: string
-    deleted?: string
   }>
 }) {
   const params = await searchParams
@@ -109,17 +107,6 @@ export default async function DashboardPage({
     <main className="mx-auto max-w-2xl px-6 py-8 pb-24">
       <PageHeader title="Dashboard" current="dashboard" />
 
-      {params.updated === '1' && (
-        <div className="mb-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-          Visit updated.
-        </div>
-      )}
-      {params.deleted === '1' && (
-        <div className="mb-4 rounded-xl bg-stone-100 px-4 py-3 text-sm text-stone-800">
-          Visit deleted. (Hidden — the audit log keeps a record.)
-        </div>
-      )}
-
       <form
         method="get"
         className="mb-6 space-y-3 rounded-xl bg-white p-4 ring-1 ring-stone-200"
@@ -173,7 +160,7 @@ export default async function DashboardPage({
         <div className="flex items-center gap-3">
           <button
             type="submit"
-            className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white"
+            className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-800 active:scale-[0.98]"
           >
             Apply
           </button>
@@ -237,7 +224,20 @@ export default async function DashboardPage({
         </h2>
         {filtered.length === 0 ? (
           <div className="rounded-xl bg-white p-6 text-center text-sm text-stone-500 ring-1 ring-stone-200">
-            No visits match these filters.
+            {visits.length === 0 ? (
+              <>
+                Nothing logged yet.{' '}
+                <Link
+                  href="/log"
+                  className="text-emerald-700 underline underline-offset-2 hover:text-emerald-800"
+                >
+                  Log your first visit
+                </Link>
+                .
+              </>
+            ) : (
+              'No visits match these filters.'
+            )}
           </div>
         ) : (
           <ul className="space-y-3">

@@ -5,13 +5,10 @@ import { VisitCard } from '@/components/VisitCard'
 
 export default async function LocationDetailPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ updated?: string; deleted?: string }>
 }) {
   const { id } = await params
-  const { updated, deleted } = await searchParams
   const sb = supabaseAdmin()
 
   const [locRes, visitsRes] = await Promise.all([
@@ -68,17 +65,6 @@ export default async function LocationDetailPage({
           </div>
         </header>
       </div>
-
-      {updated === '1' && (
-        <div className="mb-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-          Saved.
-        </div>
-      )}
-      {deleted === '1' && (
-        <div className="mb-4 rounded-xl bg-stone-100 px-4 py-3 text-sm text-stone-800">
-          Visit deleted. (Hidden — the audit log keeps a record.)
-        </div>
-      )}
 
       {visits.length === 0 ? (
         <div className="rounded-xl bg-white p-6 text-center text-sm text-stone-500 ring-1 ring-stone-200">

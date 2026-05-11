@@ -158,7 +158,7 @@ export function VisitForm({
       <button
         type="submit"
         disabled={pending || !location}
-        className="w-full rounded-xl bg-stone-900 px-4 py-4 text-base font-medium text-white transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+        className="w-full rounded-xl bg-emerald-700 px-4 py-4 text-base font-medium text-white shadow-sm transition hover:bg-emerald-800 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
       >
         {pending ? 'Saving…' : editing ? 'Update' : 'Log it'}
       </button>
@@ -197,7 +197,7 @@ function OptionCard({
   defaultChecked?: boolean
 }) {
   return (
-    <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-stone-300 bg-white px-4 py-3 text-base transition has-[:checked]:border-stone-900 has-[:checked]:bg-stone-900 has-[:checked]:text-white">
+    <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-stone-300 bg-white px-4 py-3 text-base transition hover:border-stone-400 has-[:checked]:border-emerald-700 has-[:checked]:bg-emerald-700 has-[:checked]:text-white">
       <input
         type={type}
         name={name}

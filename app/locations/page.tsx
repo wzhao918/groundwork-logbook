@@ -23,12 +23,7 @@ type EnrichedLocation = RawLocation & {
   last_visit: RawVisit | null
 }
 
-export default async function LocationsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ deleted?: string }>
-}) {
-  const { deleted } = await searchParams
+export default async function LocationsPage() {
   const sb = supabaseAdmin()
 
   const [locsRes, visitsRes] = await Promise.all([
@@ -74,12 +69,6 @@ export default async function LocationsPage({
   return (
     <main className="mx-auto max-w-2xl px-6 py-8 pb-24">
       <PageHeader title="Locations" current="locations" />
-
-      {deleted === '1' && (
-        <div className="mb-4 rounded-xl bg-stone-100 px-4 py-3 text-sm text-stone-800">
-          Location deleted. (Hidden — the audit log keeps a record.)
-        </div>
-      )}
 
       <p className="mb-6 text-sm text-stone-600">
         {enriched.length}{' '}
@@ -137,7 +126,7 @@ function LocationRow({ location }: { location: EnrichedLocation }) {
           {location.last_visit.outcomes.map(o => (
             <span
               key={o}
-              className="rounded-md bg-stone-100 px-2 py-1 text-xs text-stone-700"
+              className="rounded-md bg-emerald-50 px-2 py-1 text-xs text-emerald-900"
             >
               {outcomeLabel(o)}
             </span>

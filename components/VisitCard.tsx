@@ -75,7 +75,7 @@ export function VisitCard({
           {visit.outcomes.map(o => (
             <span
               key={o}
-              className="rounded-md bg-stone-100 px-2 py-1 text-xs text-stone-700"
+              className="rounded-md bg-emerald-50 px-2 py-1 text-xs text-emerald-900"
             >
               {outcomeLabel(o)}
             </span>
